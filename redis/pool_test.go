@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
+	"redigo/redis"
 	"github.com/stretchr/testify/require"
 )
 
@@ -787,7 +787,7 @@ func TestLocking_TestOnBorrowFails_PoolDoesntCrash(t *testing.T) {
 	}
 	wg.Wait()
 	if d.dialed != count*2 {
-		t.Errorf("Expected %d dials, got %d", count*2, d.dialed)
+		t.Errorf(  "Expected %d dials, got %d", count*2, d.dialed)
 	}
 }
 

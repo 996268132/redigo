@@ -21,8 +21,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/gomodule/redigo/redis"
+	"redigo/redis"
 )
 
 var (
