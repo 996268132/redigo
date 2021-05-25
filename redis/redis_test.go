@@ -26,6 +26,9 @@ type timeoutTestConn int
 func (tc timeoutTestConn) Do(string, ...interface{}) (interface{}, error) {
 	return time.Duration(-1), nil
 }
+
+func (tc timeoutTestConn) AsyncDo(string, ...interface{}) (redis.Ret, error) { return nil, nil }
+
 func (tc timeoutTestConn) DoWithTimeout(timeout time.Duration, cmd string, args ...interface{}) (interface{}, error) {
 	return timeout, nil
 }

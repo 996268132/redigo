@@ -146,6 +146,11 @@ func (c *muxConn) Do(cmd string, args ...interface{}) (interface{}, error) {
 	return c.Receive()
 }
 
+func (c *muxConn) AsyncDo(cmd string, args ...interface{}) (redis.Ret, error) {
+	reply,err:=c.Do(cmd,args)
+	return &redis.TRet{Reply:reply},err
+}
+
 func (c *muxConn) Err() error {
 	return c.p.c.Err()
 }

@@ -35,6 +35,10 @@ type Conn interface {
 	// Do sends a command to the server and returns the received reply.
 	Do(commandName string, args ...interface{}) (reply interface{}, err error)
 
+	// AsyncDo sends a command to the server and returns the tRet reply.
+	// tRet.Get() returns the received reply.
+	AsyncDo(commandName string, args ...interface{}) (reply Ret, err error)
+
 	// Send writes the command to the client's output buffer.
 	Send(commandName string, args ...interface{}) error
 

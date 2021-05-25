@@ -522,6 +522,11 @@ func (ac *activeConn) Do(commandName string, args ...interface{}) (reply interfa
 	return pc.c.Do(commandName, args...)
 }
 
+func (ac *activeConn) AsyncDo(commandName string, args ...interface{}) ( Ret, error) {
+	reply,err:=ac.Do(commandName,args)
+	return &TRet{Reply:reply},err
+}
+
 func (ac *activeConn) DoWithTimeout(timeout time.Duration, commandName string, args ...interface{}) (reply interface{}, err error) {
 	pc := ac.pc
 	if pc == nil {
@@ -577,6 +582,7 @@ func (ac *activeConn) ReceiveWithTimeout(timeout time.Duration) (reply interface
 type errorConn struct{ err error }
 
 func (ec errorConn) Do(string, ...interface{}) (interface{}, error) { return nil, ec.err }
+func (ec errorConn) AsyncDo(string, ...interface{}) (Ret, error) { return nil, ec.err }
 func (ec errorConn) DoWithTimeout(time.Duration, string, ...interface{}) (interface{}, error) {
 	return nil, ec.err
 }

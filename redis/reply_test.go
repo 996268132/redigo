@@ -221,7 +221,7 @@ func TestSlowLog(t *testing.T) {
 
 // dial wraps DialDefaultServer() with a more suitable function name for examples.
 func dial() (redis.Conn, error) {
-	return redis.DialDefaultServer()
+	return redis.DialDefaultServer(redis.DialReqChan(1000),redis.DialForceAsync(true))
 }
 
 // serverAddr wraps DefaultServerAddr() with a more suitable function name for examples.

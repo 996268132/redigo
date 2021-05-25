@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -39,7 +38,7 @@ var (
 
 	serverPath     = flag.String("redis-server", "redis-server", "Path to redis server binary")
 	serverAddress  = flag.String("redis-address", "127.0.0.1", "The address of the server")
-	serverBasePort = flag.Int("redis-port", 16379, "Beginning of port range for test servers")
+	serverBasePort = flag.Int("redis-port", 6379, "Beginning of port range for test servers")
 	serverLogName  = flag.String("redis-log", "", "Write Redis server logs to `filename`")
 	serverLog      = ioutil.Discard
 
@@ -134,6 +133,7 @@ func stopDefaultServer() {
 // DefaultServerAddr starts the test server if not already started and returns
 // the address of that server.
 func DefaultServerAddr() (string, error) {
+	/*
 	defaultServerMu.Lock()
 	defer defaultServerMu.Unlock()
 	addr := fmt.Sprintf("%v:%d", *serverAddress, *serverBasePort)
@@ -147,10 +147,11 @@ func DefaultServerAddr() (string, error) {
 		"--save", "",
 		"--appendonly", "no")
 	return addr, defaultServerErr
+	*/
+	 return fmt.Sprintf("%v:%d", *serverAddress, *serverBasePort),nil
 }
 
-// DialDefaultServer starts the test server if not already started and dials a
-// connection to the server.
+
 func DialDefaultServer(options ...DialOption) (Conn, error) {
 	addr, err := DefaultServerAddr()
 	if err != nil {

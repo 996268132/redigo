@@ -56,6 +56,15 @@ type conn struct {
 
 	// Scratch space for formatting integers and floats.
 	numScratch [40]byte
+
+	// async
+	forceAsync   bool
+	t            time.Time
+	reqChan      chan *tRequest
+	repChan      chan *tReply
+	closeReqChan chan bool
+	closeRepChan chan bool
+	closed       bool
 }
 
 // DialTimeout acts like Dial but takes timeouts for establishing the
@@ -87,6 +96,8 @@ type dialOptions struct {
 	useTLS              bool
 	skipVerify          bool
 	tlsConfig           *tls.Config
+	reqChanLen			int
+	forceAsync			bool
 }
 
 // DialTLSHandshakeTimeout specifies the maximum amount of time waiting to
@@ -206,6 +217,21 @@ func DialUseTLS(useTLS bool) DialOption {
 	}}
 }
 
+// server. This option is async req chan length.
+func DialReqChan(len int) DialOption {
+	return DialOption{func(do *dialOptions) {
+		do.reqChanLen = len
+	}}
+}
+
+// server. This option is force in async mode.
+func DialForceAsync(async bool) DialOption {
+	return DialOption{func(do *dialOptions) {
+		do.forceAsync = async
+	}}
+}
+
+
 // Dial connects to the Redis server at the given network and
 // address using the specified options.
 func Dial(network, address string, options ...DialOption) (Conn, error) {
@@ -227,6 +253,8 @@ func DialContext(ctx context.Context, network, address string, options ...DialOp
 			KeepAlive: time.Minute * 5,
 		},
 		tlsHandshakeTimeout: time.Second * 10,
+		reqChanLen: 1000,
+		forceAsync: false,
 	}
 	for _, option := range options {
 		option.f(&do)
@@ -282,6 +310,10 @@ func DialContext(ctx context.Context, network, address string, options ...DialOp
 		br:           bufio.NewReader(netConn),
 		readTimeout:  do.readTimeout,
 		writeTimeout: do.writeTimeout,
+		reqChan:      make(chan *tRequest, do.reqChanLen),
+		repChan:      make(chan *tReply, do.reqChanLen),
+		closeReqChan: make(chan bool),
+		closeRepChan: make(chan bool),
 	}
 
 	if do.password != "" {
@@ -309,6 +341,11 @@ func DialContext(ctx context.Context, network, address string, options ...DialOp
 			return nil, err
 		}
 	}
+
+	// request routine
+	go c.doRequest()
+	// reply routine
+	go c.doReply()
 
 	return c, nil
 }
@@ -375,13 +412,24 @@ func DialURL(rawurl string, options ...DialOption) (Conn, error) {
 
 // NewConn returns a new Redigo connection for the given net connection.
 func NewConn(netConn net.Conn, readTimeout, writeTimeout time.Duration) Conn {
-	return &conn{
+	c:= &conn{
 		conn:         netConn,
 		bw:           bufio.NewWriter(netConn),
 		br:           bufio.NewReader(netConn),
 		readTimeout:  readTimeout,
 		writeTimeout: writeTimeout,
+		reqChan:      make(chan *tRequest, 1000),
+		repChan:      make(chan *tReply, 1000),
+		closeReqChan: make(chan bool),
+		closeRepChan: make(chan bool),
 	}
+
+	// request routine
+	go c.doRequest()
+	// reply routine
+	go c.doReply()
+
+	return c
 }
 
 func (c *conn) Close() error {
@@ -723,6 +771,13 @@ func (c *conn) ReceiveWithTimeout(timeout time.Duration) (reply interface{}, err
 }
 
 func (c *conn) Do(cmd string, args ...interface{}) (interface{}, error) {
+	if c.forceAsync { //force in async mode
+		ret,err:=c.AsyncDo(cmd, args...)
+		if err!=nil{
+			return nil,err
+		}
+		return ret.Get()
+	}
 	return c.DoWithTimeout(c.readTimeout, cmd, args...)
 }
 

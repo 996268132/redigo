@@ -22,8 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"redigo/redis"
 	"github.com/stretchr/testify/require"
+	"redigo/redis"
 )
 
 type durationScan struct {
